@@ -1,0 +1,10 @@
+CARNET DE TOURNÉE - INSTALLATION SUR IPHONE
+
+1. Sur github.com, créez un dépôt (ex. : tournee) et déposez-y tous ces fichiers à la racine.
+2. Dans Settings > Pages, choisissez Deploy from a branch, branche main, dossier / (root).
+3. Attendez l'adresse https://VOTRE-COMPTE.github.io/tournee/.
+4. Sur l'iPhone, ouvrez cette adresse dans Safari, touchez Partager, puis « Sur l'écran d'accueil ».
+5. Ouvrez l'application depuis son icône, puis une seconde fois en mode avion pour vérifier.
+
+Le site ne contient que le programme. Vos adresses et vos passages restent sur l'iPhone.
+Ne supprimez pas l'icône : cela efface les données. Sauvegardez régulièrement depuis Réglages.
