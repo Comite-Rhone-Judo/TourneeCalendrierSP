@@ -34,12 +34,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 
 /* Page immeuble */
 .head{flex:none;display:grid;grid-template-columns:1fr 112px;margin:6px 6px 0;border:2px solid var(--line);border-bottom:0;background:var(--sheet)}
-.head button{min-height:60px;padding:6px 10px;text-align:left}
+.head button{min-height:54px;padding:6px 10px;text-align:left}
 .addr{font-size:21px;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
 .code{border-left:2px solid var(--line)!important;font-size:21px;font-weight:700;overflow-wrap:anywhere;line-height:1.1}
 .code small{display:block;font-size:13px;font-weight:400;color:var(--mut)}
 .grid{flex:1 1 0;min-height:0;overflow-y:auto;margin:0 6px;display:flex;flex-direction:column;border:2px solid var(--line);border-bottom:0;background:var(--sheet);-webkit-overflow-scrolling:touch}
-.floor{flex:1 0 88px;display:grid;grid-template-columns:50px 1fr;border-bottom:2px solid var(--line);max-height:132px}
+.floor{flex:1 0 83px;display:grid;grid-template-columns:50px 1fr;border-bottom:2px solid var(--line);max-height:132px}
 .flabel{background:var(--floor);color:var(--floor-ink);font-weight:700;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
 .flabel i{display:block;width:20px;height:20px;border:2px solid var(--floor-ink);border-radius:3px;font-style:normal;font-size:15px;line-height:16px;text-align:center}
 .doors{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;min-width:0}
@@ -47,7 +47,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .door:first-child,.door:nth-child(4){border-left:0}
 .door:nth-child(n+4){border-bottom:0}
 .num{display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--mut);font-weight:600;font-variant-numeric:tabular-nums}
-.c{border-left:1px solid var(--line);font-size:25px;font-weight:800;min-height:43px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.c{border-left:1px solid var(--line);font-size:25px;font-weight:800;min-height:40px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 .c.A{background:var(--a);color:var(--a-ink)}
 .c.X{background:var(--x);color:var(--x-ink)}
 .c.R{background:var(--r);color:var(--r-ink)}
@@ -55,8 +55,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .c:active{opacity:.7}
 .offbox{display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:17px;background:repeating-linear-gradient(135deg,transparent 0 9px,var(--raised) 9px 18px)}
 .floor.off{flex:1 0 52px;max-height:88px}
-.floormore{display:flex;gap:6px;padding:6px;flex:none}
-.floormore .btn{min-height:44px;font-size:16px}
+.floormore{display:flex;flex-wrap:wrap;gap:6px;padding:6px;flex:none}
+.floormore .btn{flex:1 1 40%;width:auto;min-height:44px;padding:0 6px;font-size:16px}
 .notes{flex:none;margin:0 6px;border:2px solid var(--line);border-top:0;background:var(--sheet);min-height:40px;padding:6px 10px;text-align:left;width:calc(100% - 12px);font-size:17px;overflow-wrap:anywhere;white-space:pre-wrap}
 .notes.empty{color:var(--mut)}
 .legend{flex:none;display:flex;justify-content:space-between;gap:6px;padding:7px 8px 0;font-size:16px}
@@ -181,7 +181,7 @@ function renderBuilding(){
     ${f.off?`<div class="offbox">Pas de porte</div>`:`<div class="doors">${order.map(n=>doorHtml(b,fi,n)).join('')}</div>`}</div>`).join('');
   const last=b.floors.length-1, canRemove=b.floors.length>BASE_FLOORS&&!hasData(b,last)&&!readOnly();
   app.innerHTML=`<div class="head"><button class="addr" data-act="edit" aria-label="Modifier l'adresse">${esc(title(b))}</button><button class="code" data-act="edit" aria-label="Modifier le code"><small>Code</small>${esc(b.code)}</button></div>
-  <div class="grid" id="grid">${floors}${readOnly()?'':`<div class="floormore"><button class="btn" data-act="addfloor">Ajouter un étage</button>${canRemove?`<button class="btn" data-act="rmfloor">Retirer le ${floorName(last)}</button>`:''}</div>`}</div>
+  <div class="grid" id="grid">${floors}${readOnly()?'':`<div class="floormore"><button class="btn" data-act="addfloor">Ajouter un étage</button><button class="btn" data-act="edit">Modifier ou supprimer</button>${canRemove?`<button class="btn" data-act="rmfloor">Retirer le ${floorName(last)}</button>`:''}</div>`}</div>
   <button class="notes ${b.notes?'':'empty'}" data-act="edit">${esc(b.notes||'Notes')}</button>
   <div class="legend"><span><i class="chip A" style="font-style:normal">A</i>Absent</span><span><i class="chip X" style="font-style:normal">X</i>Vente</span><span><i class="chip R" style="font-style:normal">R</i>Refus</span></div>
   <div class="foot"><button class="btn main" data-act="close">Fermer l'immeuble</button></div>`;
@@ -247,6 +247,8 @@ function renderMenu(){
     <p>Garde les adresses, les codes, les notes et les étages. Les cases repartent vides, et les tournées passées restent consultables.</p>
     <button class="btn" data-act="newseason">Commencer la tournée ${y}</button></div>
   <div class="sec"><h2>Affichage</h2><div class="seg">${[['auto','Auto'],['dark','Sombre'],['light','Clair']].map(([k,l])=>`<button class="btn ${S.theme===k?'on':''}" data-act="theme" data-t="${k}">${l}</button>`).join('')}</div></div>
+  <div class="sec"><h2>Tout effacer</h2><p>Supprime toutes les adresses et toutes les tournées de ce téléphone. Les fichiers de sauvegarde ne sont pas touchés.</p>
+    <button class="btn danger" data-act="reset">Effacer toutes les données</button></div>
   </div><div class="foot"><button class="btn main" data-act="back">Retour à la liste</button></div>`;
 }
 function applyTheme(){const r=document.documentElement;if(S.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',S.theme)}
@@ -291,6 +293,7 @@ document.addEventListener('click',e=>{
   else if(a==='import')document.getElementById('importFile').click();
   else if(a==='season'){S.season=+t.dataset.y;S.open=null;save(false);go('list')}
   else if(a==='newseason'){const y=latest()+1;dialog(`Commencer la tournée ${y} ?`,'Les adresses et les étages sont repris, les cases repartent vides. La tournée précédente reste consultable.','Commencer',()=>{S.seasons.push(y);S.season=y;S.open=null;save();go('list');toast(`Tournée ${y} commencée.`)})}
+  else if(a==='reset')dialog('Effacer toutes les données ?',`${S.buildings.length} adresses et toutes les tournées seront supprimées de ce téléphone. Sans fichier de sauvegarde, elles seront perdues.`,'Tout effacer',()=>{const theme=S.theme;S=blank();S.theme=theme;query='';save(false);go('list');toast('Toutes les données sont effacées.')});
   else if(a==='theme'){S.theme=t.dataset.t;save(false);applyTheme();render()}
 });
 

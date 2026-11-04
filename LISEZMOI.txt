@@ -8,3 +8,7 @@ CARNET DE TOURNÉE - INSTALLATION SUR IPHONE
 
 Le site ne contient que le programme. Vos adresses et vos passages restent sur l'iPhone.
 Ne supprimez pas l'icône : cela efface les données. Sauvegardez régulièrement depuis Réglages.
+
+CHANGER L'ICÔNE D'UNE APPLICATION DÉJÀ INSTALLÉE
+L'iPhone garde l'icône choisie à l'installation. Supprimer l'icône efface les données, donc :
+sauvegardez d'abord dans un fichier (Réglages), supprimez l'icône, réinstallez depuis Safari, puis restaurez le fichier.
