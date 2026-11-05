@@ -87,6 +87,28 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 .form textarea{min-height:88px;resize:none}
 .err{color:var(--danger);font-weight:600}
 .pair{display:grid;grid-template-columns:96px 1fr;gap:8px}
+.types{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.types .btn{min-height:44px;padding:0 2px;font-size:15px;width:auto}
+.types .on{background:var(--ink);color:var(--bg)}
+.preview{font-size:21px;font-weight:700;min-height:27px}
+.clearable{position:relative;display:block}
+.clearable input{padding-right:40px}
+.clearable button{position:absolute;right:0;top:0;bottom:0;width:42px;font-size:24px;color:var(--mut)}
+.mapwrap{flex:1 1 0;min-height:0;position:relative}
+#map{position:absolute;inset:0;background:#dfe3e8}
+.mapmsg{flex:none;padding:6px 12px;font-size:16px;color:var(--mut)}
+.mapmsg:empty{display:none}
+.pin{display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;padding:3px 7px;border-radius:6px;font:800 15px/1.2 var(--font);border:2px solid #000;background:#d5d9de;color:#000}
+.pin.a{background:#ffcf33}.pin.d{background:#2fd36f}.pin.approx{border-style:dashed}
+.pinicon{background:none;border:0}
+.pop{display:flex;flex-direction:column;gap:8px;min-width:190px;font:16px var(--font);color:#000}
+.pop b{font-size:18px}.pop .sum{display:flex;gap:5px}
+.pop button{min-height:44px;border-radius:8px;background:#000;color:#fff;font-weight:700}
+.dot{display:inline-block;width:16px;height:16px;border-radius:4px;border:2px solid #000}
+.dot.n{background:#d5d9de}.dot.a{background:#ffcf33}.dot.d{background:#2fd36f}
+.syncline{flex:none;padding:4px 12px;font-size:15px;color:var(--mut)}
+.syncline.bad{color:var(--danger);font-weight:600}
+.msgline{font-weight:600;font-size:16px}
 .foot2{flex:none;display:grid;grid-template-columns:1fr 2fr;gap:8px;padding:8px}
 .foot2 .btn.main{font-size:18px}
 .sec{display:flex;flex-direction:column;gap:8px}
@@ -117,9 +139,22 @@ const coll=new Intl.Collator('fr',{numeric:true,sensitivity:'base'});
 const app=document.getElementById('app');
 let storageOk=true, view={name:'list'}, query='', S;
 
-function blank(){const y=new Date().getFullYear();return{v:1,seasons:[y],season:y,lastStreet:'',lastExport:0,lastChange:0,theme:'auto',open:null,buildings:[]}}
-function load(){try{const r=localStorage.getItem(KEY);if(r)return Object.assign(blank(),JSON.parse(r))}catch(e){storageOk=false}return blank()}
-function save(changed=true){if(changed)S.lastChange=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));storageOk=true}catch(e){storageOk=false;toast("Enregistrement impossible sur ce téléphone. Faites une sauvegarde.")}}
+const TYPES=['rue','avenue','boulevard','allée','place','impasse','chemin',''];
+const fullStreet=(t,n)=>(t?t+' ':'')+n;
+function parseStreet(s){const m=String(s||'').trim().match(/^(rue|avenue|av\.?|boulevard|bd|all[ée]e|place|impasse|chemin)\s+(.+)$/i);
+  if(!m)return{stype:'',sname:String(s||'').trim()};
+  const k=norm(m[1]);return{stype:k.startsWith('av')?'avenue':k==='bd'?'boulevard':k==='allee'?'allée':k,sname:m[2]}}
+function migrate(d){(d.buildings||[]).forEach(b=>{if(b.sname===undefined){Object.assign(b,parseStreet(b.street))}b.street=fullStreet(b.stype,b.sname)});
+  if(!d.v2){const p=parseStreet(d.lastStreet);d.lastStreet=p.sname;d.lastType=p.stype||'rue';d.v2=1}return d}
+function levenshtein(a,b){let p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
+const normNum=s=>norm(s).replace(/\s/g,'');
+/* Copie de secours dans IndexedDB, relue si le stockage principal revient vide */
+function idb(mode,fn){return new Promise((ok,ko)=>{const r=indexedDB.open('tournee',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onerror=()=>ko(r.error);
+  r.onsuccess=()=>{const t=r.result.transaction('kv',mode),q=fn(t.objectStore('kv'));t.oncomplete=()=>{r.result.close();ok(q.result)};t.onerror=()=>ko(t.error)}})}
+const mirror=j=>{try{idb('readwrite',s=>s.put(j,'data')).catch(()=>{})}catch(e){}};
+function blank(){const y=new Date().getFullYear();return{v:1,seasons:[y],season:y,lastStreet:'',lastType:'rue',city:'',postcode:'',lastExport:0,lastChange:0,theme:'auto',open:null,buildings:[]}}
+function load(){try{const r=localStorage.getItem(KEY);if(r)return migrate(Object.assign(blank(),JSON.parse(r)))}catch(e){storageOk=false}return blank()}
+function save(changed=true){if(changed)S.lastChange=Date.now();if(changed)scheduleSync();const j=JSON.stringify(S);mirror(j);try{localStorage.setItem(KEY,j);storageOk=true}catch(e){storageOk=false;toast("Enregistrement impossible sur ce téléphone. Faites une sauvegarde.")}}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const floorName=i=>i===0?'RDC':i===1?'1er':i+'ème';
@@ -140,20 +175,20 @@ function renderList(){
   if(!storageOk)notes.push(`<div class="note">Ce téléphone refuse l'enregistrement : les saisies seront perdues à la fermeture.</div>`);
   if(framed)notes.push(`<div class="note">Aperçu avec des adresses d'exemple. L'application installée démarre vide et fonctionne hors connexion.</div>`);
   else if(!standalone)notes.push(`<div class="note">Installez l'application pour garder vos données : bouton Partager de Safari, puis « Sur l'écran d'accueil ». Ouvrez-la ensuite depuis son icône.</div>`);
-  const week=7*864e5;
-  if(S.buildings.length&&S.lastChange>S.lastExport&&Date.now()-S.lastExport>week)
+  const day=864e5;
+  if(S.buildings.length&&!(sync.repo&&!sync.error)&&S.lastChange>S.lastExport&&Date.now()-S.lastExport>day)
     notes.push(`<div class="note">${S.lastExport?'Dernière sauvegarde le '+new Date(S.lastExport).toLocaleDateString('fr-FR'):'Aucune sauvegarde pour le moment'}.<button data-act="export">Sauvegarder maintenant</button></div>`);
   if(readOnly())notes.push(`<div class="note">Tournée ${S.season} en consultation.<button data-act="season" data-y="${latest()}">Revenir à ${latest()}</button></div>`);
-  app.innerHTML=`<div class="top"><h1>Tournée ${S.season}</h1><button class="icon" data-act="menu">Réglages</button></div>
+  app.innerHTML=`<div class="top"><h1>Tournée ${S.season}</h1>${framed?'':'<button class="icon" data-act="map">Carte</button>'}<button class="icon" data-act="menu">Réglages</button></div>
   <div class="search"><input id="q" type="search" placeholder="Rechercher une adresse" aria-label="Rechercher une adresse" autocomplete="off" autocorrect="off" enterkeyhint="search" value="${esc(query)}"><button data-act="clear" aria-label="Effacer la recherche" ${query?'':'hidden'}>×</button></div>
-  <div class="scroll" id="results"></div>${notes.join('')}
+  <div class="scroll" id="results"></div>${notes.join('')}<div class="syncline" id="syncline" hidden></div>
   <div class="foot" ${readOnly()?'hidden':''}><button class="btn main" data-act="new">Nouvel immeuble</button></div>`;
-  renderResults();
+  renderResults();updateSyncLine();
   document.getElementById('q').addEventListener('input',e=>{query=e.target.value;app.querySelector('[data-act=clear]').hidden=!query;renderResults()});
 }
 function renderResults(){
   const q=norm(query),el=document.getElementById('results');
-  const list=S.buildings.filter(b=>norm(title(b)).includes(q)).sort((a,b)=>coll.compare(a.street,b.street)||coll.compare(a.num,b.num));
+  const list=S.buildings.filter(b=>norm(title(b)).includes(q)).sort((a,b)=>coll.compare(a.sname,b.sname)||coll.compare(a.stype,b.stype)||coll.compare(a.num,b.num));
   if(!S.buildings.length){el.innerHTML=`<div class="empty-msg">Aucune adresse. Touchez « Nouvel immeuble » en arrivant au pied du premier immeuble.</div>`;return}
   if(!list.length){el.innerHTML=`<div class="empty-msg">Aucune adresse ne correspond à « ${esc(query)} ».</div>`;return}
   let html='',cur=null;
@@ -208,55 +243,180 @@ app.addEventListener('pointermove',e=>{if(lpT&&(Math.abs(e.clientX-lpX)>10||Math
 app.addEventListener('contextmenu',e=>{if(e.target.closest('.c'))e.preventDefault()});
 
 /* ---------- Formulaire adresse ---------- */
+let formType='rue';
 function renderEdit(){
-  const b=view.id?byId(view.id):null, streets=[...new Map(S.buildings.map(x=>[norm(x.street),x.street])).values()].sort(coll.compare);
-  const street=b?b.street:S.lastStreet;
+  const b=view.id?byId(view.id):null, names=[...new Map(S.buildings.map(x=>[norm(x.sname),x.sname])).values()].sort(coll.compare);
+  formType=b?b.stype:(S.lastType??'rue');
   app.innerHTML=`<div class="top"><h1>${b?"Modifier l'adresse":'Nouvel immeuble'}</h1></div>
   <div class="form">
     <div class="pair"><label>Numéro<input id="f-num" autocomplete="off" autocorrect="off" value="${esc(b?b.num:'')}"></label>
-    <label>Rue<input id="f-street" list="streets" autocomplete="off" value="${esc(street)}"></label></div>
-    <datalist id="streets">${streets.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+    <label>Nom de la voie<span class="clearable"><input id="f-street" list="streets" autocomplete="off" autocapitalize="words" value="${esc(b?b.sname:S.lastStreet)}"><button type="button" data-act="clearname" aria-label="Effacer le nom">×</button></span></label></div>
+    <datalist id="streets">${names.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+    <div class="types" id="types">${TYPES.map(t=>`<button type="button" class="btn ${t===formType?'on':''}" data-act="stype" data-t="${esc(t)}">${t?t[0].toUpperCase()+t.slice(1):'Autre'}</button>`).join('')}</div>
+    <div class="preview" id="f-prev"></div>
     <label>Code (digicode, interphone)<input id="f-code" autocomplete="off" autocorrect="off" value="${esc(b?b.code:'')}"></label>
     <label>Notes<textarea id="f-notes">${esc(b?b.notes:'')}</textarea></label>
     <div class="err" id="f-err" hidden></div>
     ${b&&!readOnly()?`<button class="btn danger" data-act="delete">Supprimer cette adresse</button>`:''}
   </div>
   <div class="foot2"><button class="btn" data-act="cancel">Annuler</button><button class="btn main" data-act="saveaddr">${b?'Enregistrer':'Créer la page'}</button></div>`;
-  if(!b)document.getElementById('f-num').focus();
+  const nm=document.getElementById('f-street'),num=document.getElementById('f-num');
+  const prev=()=>{document.getElementById('f-prev').textContent=fullStreet(formType,nm.value.trim())?(num.value.trim()+' '+fullStreet(formType,nm.value.trim())).trim():'';document.getElementById('f-err').hidden=true};
+  nm.addEventListener('focus',()=>nm.select());
+  nm.addEventListener('input',()=>{const hit=S.buildings.find(x=>norm(x.sname)===norm(nm.value));if(hit)setType(hit.stype);prev()});
+  num.addEventListener('input',prev);prev();
+  if(!b)num.focus();
 }
-function saveAddr(){
+function setType(t){formType=t;document.querySelectorAll('#types .btn').forEach(x=>x.classList.toggle('on',x.dataset.t===t));const n=document.getElementById('f-street').value.trim(),m=document.getElementById('f-num').value.trim();document.getElementById('f-prev').textContent=(m+' '+fullStreet(t,n)).trim()}
+function saveAddr(force){
   const val=id=>document.getElementById(id).value.trim();
-  const num=val('f-num'),street=val('f-street'),code=val('f-code'),notes=val('f-notes'),err=document.getElementById('f-err');
-  if(!street){err.textContent='Indiquez la rue.';err.hidden=false;return}
-  const dup=S.buildings.find(x=>x.id!==view.id&&norm(x.num)===norm(num)&&norm(x.street)===norm(street));
-  if(dup){err.innerHTML=`Cette adresse existe déjà.<button class="btn" style="margin-top:8px" data-act="open" data-id="${dup.id}">Ouvrir sa page</button>`;err.hidden=false;return}
-  S.lastStreet=street;
-  if(view.id){Object.assign(byId(view.id),{num,street,code,notes});save();go('building',view.id)}
+  const num=val('f-num'),sname=val('f-street'),code=val('f-code'),notes=val('f-notes'),err=document.getElementById('f-err'),street=fullStreet(formType,sname);
+  if(!sname){err.textContent='Indiquez le nom de la voie.';err.hidden=false;return}
+  const dup=S.buildings.find(x=>x.id!==view.id&&normNum(x.num)===normNum(num)&&norm(x.street)===norm(street));
+  if(dup){err.innerHTML=`Le ${esc(title(dup))} existe déjà.<button class="btn" style="margin-top:8px" data-act="open" data-id="${dup.id}">Ouvrir sa page</button>`;err.hidden=false;err.scrollIntoView();return}
+  if(!force){const n=norm(sname),others=S.buildings.filter(x=>x.id!==view.id);
+    if(!others.some(x=>norm(x.sname)===n)){
+      const near=others.find(x=>{const m=norm(x.sname);return n.length>=4&&levenshtein(n,m)<=(n.length<8?1:2)});
+      if(near){err.innerHTML=`Vouliez-vous dire « ${esc(near.street)} » ?<button class="btn" style="margin-top:8px" data-act="usename" data-id="${near.id}">Oui, corriger</button><button class="btn" style="margin-top:8px" data-act="force">Non, garder « ${esc(street)} »</button>`;err.hidden=false;err.scrollIntoView();return}}}
+  S.lastStreet=sname;S.lastType=formType;
+  if(view.id){Object.assign(byId(view.id),{num,street,stype:formType,sname,code,notes});save();go('building',view.id)}
   else{const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    S.buildings.push({id,num,street,code,notes,floors:newFloors(),visits:{}});save();openBuilding(id)}
+    S.buildings.push({id,num,street,stype:formType,sname,code,notes,floors:newFloors(),visits:{}});save();openBuilding(id)}
 }
 
 /* ---------- Réglages ---------- */
 function renderMenu(){
   const y=latest()+1, seasons=[...S.seasons].sort((a,b)=>b-a);
   app.innerHTML=`<div class="top"><h1>Réglages</h1></div><div class="form">
-  <div class="sec"><h2>Sauvegarde</h2><p>${S.lastExport?'Dernière sauvegarde le '+new Date(S.lastExport).toLocaleDateString('fr-FR'):'Aucune sauvegarde pour le moment'}. Enregistrez le fichier dans Fichiers ou iCloud Drive.</p>
+  <div class="sec"><h2>Sauvegarde</h2><p>${S.lastExport?'Dernière sauvegarde le '+new Date(S.lastExport).toLocaleDateString('fr-FR'):'Aucune sauvegarde pour le moment'}. Choisissez « Enregistrer dans Fichiers », puis iCloud Drive. Le fichier de la tournée porte toujours le même nom : remplacez l'ancien.</p>
     <button class="btn" data-act="export">Sauvegarder dans un fichier</button><button class="btn" data-act="import">Restaurer depuis un fichier</button></div>
   <div class="sec"><h2>Tournée</h2>
     ${seasons.length>1?`<div class="seg">${seasons.map(s=>`<button class="btn ${s===S.season?'on':''}" data-act="season" data-y="${s}">${s}</button>`).join('')}</div>`:''}
     <p>Garde les adresses, les codes, les notes et les étages. Les cases repartent vides, et les tournées passées restent consultables.</p>
     <button class="btn" data-act="newseason">Commencer la tournée ${y}</button></div>
+  ${framed?'':`<div class="sec"><h2>Sauvegarde automatique sur GitHub</h2>
+    ${sync.repo?`<p>Dépôt privé ${esc(sync.repo)}. Les données partent quand l'application est ouverte et qu'il y a du réseau.</p><div class="msgline" id="sync-msg"></div>
+      <button class="btn" data-act="syncnow">Envoyer maintenant</button><button class="btn" data-act="syncrestore">Récupérer depuis GitHub</button><button class="btn" data-act="syncoff">Désactiver et oublier le jeton</button>`
+    :`<p>Il faut un dépôt privé et un jeton limité à ce dépôt (voir LISEZMOI.txt).</p>
+      <label>Dépôt (compte/nom)<input id="s-repo" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="moncompte/tournee-data"></label>
+      <label>Jeton d'accès<input id="s-token" type="password" autocomplete="off" autocorrect="off" autocapitalize="off"></label>
+      <div class="msgline" id="sync-msg"></div><button class="btn" data-act="syncon">Vérifier et activer</button>`}</div>
+  <div class="sec"><h2>Ville de référence pour la carte</h2><p>Sert à placer les adresses sur la carte. France uniquement.</p>
+    <div class="pair"><label>Code postal<input id="s-cp" inputmode="numeric" autocomplete="off" value="${esc(S.postcode)}"></label><label>Ville<input id="s-city" autocomplete="off" value="${esc(S.city)}"></label></div></div>`}
   <div class="sec"><h2>Affichage</h2><div class="seg">${[['auto','Auto'],['dark','Sombre'],['light','Clair']].map(([k,l])=>`<button class="btn ${S.theme===k?'on':''}" data-act="theme" data-t="${k}">${l}</button>`).join('')}</div></div>
   <div class="sec"><h2>Tout effacer</h2><p>Supprime toutes les adresses et toutes les tournées de ce téléphone. Les fichiers de sauvegarde ne sont pas touchés.</p>
     <button class="btn danger" data-act="reset">Effacer toutes les données</button></div>
   </div><div class="foot"><button class="btn main" data-act="back">Retour à la liste</button></div>`;
+  const city=document.getElementById('s-city'),cp=document.getElementById('s-cp');
+  if(city){const up=()=>{S.city=city.value.trim();S.postcode=cp.value.trim();save()};city.addEventListener('change',up);cp.addEventListener('change',up)}
+  updateSyncLine();
 }
+/* ---------- Sauvegarde GitHub ---------- */
+const SYNC_KEY='tournee-sync',GH='https://api.github.com/repos/',GH_FILE='tournee.json';
+function loadSync(){try{return JSON.parse(localStorage.getItem(SYNC_KEY))||{}}catch(e){return{}}}
+let sync=loadSync(),pushing=false,syncT=null;
+function saveSync(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(sync))}catch(e){}}
+const ghHead=(tok,raw)=>({Authorization:'Bearer '+tok,Accept:raw?'application/vnd.github.raw+json':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
+function toB64(s){const b=new TextEncoder().encode(s);let o='';for(let i=0;i<b.length;i+=8192)o+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(o)}
+const ghError=c=>c===401?'jeton refusé ou expiré':c===403?'le jeton n\'a pas le droit d\'écrire (Contents : Read and write)':c===404?'dépôt introuvable avec ce jeton':'erreur GitHub '+c;
+const fileUrl=()=>GH+sync.repo+'/contents/'+GH_FILE;
+async function ghSha(){const r=await fetch(fileUrl(),{headers:ghHead(sync.token),cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw{code:r.status};return(await r.json()).sha}
+const isDirty=()=>!!sync.repo&&!!S.buildings.length&&S.lastChange>(sync.lastPush||0);
+function scheduleSync(){if(!sync.repo)return;updateSyncLine();clearTimeout(syncT);syncT=setTimeout(pushNow,15000)}
+async function pushNow(force){
+  if(!sync.repo||pushing||!S.buildings.length||(!force&&!isDirty()))return;
+  if(navigator.onLine===false){updateSyncLine();return}
+  clearTimeout(syncT);pushing=true;const stamp=S.lastChange;
+  const body=JSON.stringify({...S,open:null},null,1);
+  try{
+    for(let tryNo=0;tryNo<2;tryNo++){
+      if(!sync.sha)sync.sha=await ghSha();
+      const r=await fetch(fileUrl(),{method:'PUT',headers:ghHead(sync.token),body:JSON.stringify({message:'Sauvegarde automatique',content:toB64(body),...(sync.sha?{sha:sync.sha}:{})})});
+      if(r.ok){sync.sha=(await r.json()).content.sha;sync.lastPush=Math.max(stamp,1);sync.lastOk=Date.now();sync.error='';break}
+      if((r.status===409||r.status===422)&&tryNo===0){sync.sha=null;continue}
+      throw{code:r.status};
+    }
+  }catch(e){if(e&&e.code)sync.error=ghError(e.code)}
+  pushing=false;saveSync();updateSyncLine();
+  if(view.name==='list'&&!sync.error)return;
+}
+function syncText(){if(!sync.repo)return null;
+  if(sync.error)return{bad:true,t:'Sauvegarde GitHub en échec : '+sync.error+'.'};
+  if(isDirty())return{t:'Sauvegarde GitHub en attente de réseau.'};
+  if(sync.lastOk){const d=new Date(sync.lastOk),same=d.toDateString()===new Date().toDateString();return{t:'Sauvegardé sur GitHub '+(same?'à ':'le '+d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' à ')+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'.'}}
+  return{t:'Sauvegarde GitHub activée.'}}
+function updateSyncLine(){const v=syncText();for(const id of['syncline','sync-msg']){const l=document.getElementById(id);if(!l)continue;if(!v){l.hidden=true;continue}l.hidden=false;l.textContent=v.t;l.classList.toggle('bad',!!v.bad)}}
+async function activateSync(){
+  const repo=document.getElementById('s-repo').value.trim().replace(/^https:\/\/github\.com\//,'').replace(/\/$/,''),token=document.getElementById('s-token').value.trim(),m=document.getElementById('sync-msg');
+  const fail=t=>{m.textContent=t;m.classList.add('bad')};
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){fail('Indiquez le dépôt sous la forme compte/nom.');return}
+  if(!token){fail('Collez le jeton d\'accès.');return}
+  m.classList.remove('bad');m.textContent='Vérification…';
+  try{
+    const r=await fetch(GH+repo,{headers:ghHead(token),cache:'no-store'});
+    if(!r.ok){fail('Activation impossible : '+ghError(r.status)+'.');return}
+    if(!(await r.json()).private){fail('Ce dépôt est public : vos adresses et vos codes y seraient visibles. Choisissez un dépôt privé.');return}
+    sync={repo,token};sync.sha=await ghSha();saveSync();
+    if(sync.sha&&!S.buildings.length){render();restoreSync();return}
+    render();await pushNow(true);
+  }catch(e){if(e&&e.code)fail('Activation impossible : '+ghError(e.code)+'.');else fail('GitHub est injoignable. Vérifiez le réseau.')}
+}
+function restoreSync(){dialog('Récupérer la sauvegarde GitHub ?','Les données de ce téléphone seront remplacées par la dernière sauvegarde envoyée.','Récupérer',async()=>{
+  try{const r=await fetch(fileUrl(),{headers:ghHead(sync.token,true),cache:'no-store'});if(!r.ok)throw{code:r.status};
+    const d=JSON.parse(await r.text());if(!Array.isArray(d.buildings))throw{};
+    S=migrate(Object.assign(blank(),d,{open:null,theme:S.theme}));save(false);sync.lastPush=S.lastChange;sync.error='';saveSync();go('list');toast(`${S.buildings.length} adresses récupérées.`)
+  }catch(e){toast(e&&e.code?'Récupération impossible : '+ghError(e.code)+'.':'Récupération impossible. Vérifiez le réseau.')}})}
+
+/* ---------- Carte ---------- */
+let mapObj=null,mapToken=0;
+function loadLeaflet(){if(window.L)return Promise.resolve();return new Promise((ok,ko)=>{const c=document.createElement('link');c.rel='stylesheet';c.href='leaflet.css';document.head.appendChild(c);const s=document.createElement('script');s.src='leaflet.js';s.onload=ok;s.onerror=ko;document.head.appendChild(s)})}
+const geoQuery=b=>`${b.num} ${b.street} ${S.postcode} ${S.city}`.replace(/\s+/g,' ').trim();
+function mapState(b){const c=cells(b);let any=false,todo=false;b.floors.forEach((f,fi)=>{if(f.off)return;for(let d=0;d<DOORS;d++){const a=c[`${fi}-${d}-0`],z=c[`${fi}-${d}-1`];if(a||z)any=true;if(a&&a.s==='A'&&!z)todo=true}});return todo?'a':any?'d':'n'}
+function addPin(b,layer){const g=b.geo;
+  const m=L.marker([g.lat,g.lon],{icon:L.divIcon({className:'pinicon',iconSize:[0,0],html:`<span class="pin ${mapState(b)==='n'?'':mapState(b)} ${g.approx?'approx':''}">${esc(b.num||'•')}</span>`})}).addTo(layer);
+  const {n,any}=summary(b);
+  m.bindPopup(`<div class="pop"><b>${esc(title(b))}</b><div class="sum">${any?['X','A','R'].filter(k=>n[k]).map(k=>`<span class="chip ${k}">${k} ${n[k]}</span>`).join(''):'Pas encore visité'}</div>${g.approx?'<span>Position approximative</span>':''}<button>Ouvrir la page</button></div>`);
+  m.on('popupopen',e=>{e.popup.getElement().querySelector('button').onclick=()=>openBuilding(b.id)});
+  return m}
+function mapMessage(t,act,label){app.innerHTML=`<div class="top"><h1>Carte</h1></div><div class="empty-msg">${esc(t)}</div><div class="foot" style="margin-top:auto;display:grid;gap:8px">${act?`<button class="btn" data-act="${act}">${esc(label)}</button>`:''}<button class="btn main" data-act="back">Retour à la liste</button></div>`}
+async function renderMap(){
+  const tok=mapToken;
+  if(navigator.onLine===false){mapMessage('La carte demande une connexion. La saisie reste disponible sans réseau.');return}
+  if(!S.city||!S.postcode){mapMessage('Indiquez d\'abord le code postal et la ville de référence dans les réglages.','menu','Ouvrir les réglages');return}
+  app.innerHTML=`<div class="top"><h1>Carte</h1></div><div class="mapwrap"><div id="map"></div></div><div class="mapmsg" id="mapmsg">Chargement…</div>
+  <div class="legend"><span><i class="dot n"></i>Pas visité</span><span><i class="dot a"></i>À repasser</span><span><i class="dot d"></i>Traité</span></div>
+  <div class="foot"><button class="btn main" data-act="back">Retour à la liste</button></div>`;
+  const msg=document.getElementById('mapmsg');
+  try{await loadLeaflet()}catch(e){msg.textContent='Impossible de charger la carte. Réessayez avec du réseau.';return}
+  if(tok!==mapToken)return;
+  mapObj=L.map('map',{zoomControl:true}).setView([46.6,2.4],6);
+  L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',{maxNativeZoom:19,maxZoom:20,attribution:'Plan IGN, adresses BAN'}).addTo(mapObj);
+  const layer=L.layerGroup().addTo(mapObj);
+  const fit=()=>{const pts=S.buildings.filter(b=>b.geo&&b.geo.lat!==undefined&&b.geo.key===geoQuery(b)).map(b=>[b.geo.lat,b.geo.lon]);if(pts.length)mapObj.fitBounds(pts,{padding:[36,36],maxZoom:18})};
+  S.buildings.forEach(b=>{if(b.geo&&b.geo.lat!==undefined&&b.geo.key===geoQuery(b))addPin(b,layer)});fit();
+  const todo=S.buildings.filter(b=>!b.geo||b.geo.key!==geoQuery(b));let netFail=false;
+  for(let i=0;i<todo.length;i++){
+    if(tok!==mapToken)return;
+    msg.textContent=`Placement des adresses : ${i+1} sur ${todo.length}`;
+    const b=todo[i],q=geoQuery(b);
+    try{const u=`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(q)}&postcode=${encodeURIComponent(S.postcode)}&index=address&autocomplete=0&limit=1`;
+      const r=await fetch(u);if(!r.ok)throw 0;const f=(await r.json()).features[0];
+      if(f&&f.properties.score>=0.4){b.geo={key:q,lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1],approx:f.properties.type!=='housenumber'};if(tok===mapToken)addPin(b,layer)}
+      else b.geo={key:q};
+    }catch(e){netFail=true;break}
+    await new Promise(r=>setTimeout(r,120));
+  }
+  save(false);if(tok!==mapToken)return;fit();
+  const lost=S.buildings.filter(b=>b.geo&&b.geo.key===geoQuery(b)&&b.geo.lat===undefined);
+  msg.textContent=netFail?'Le service d\'adresses ne répond pas : certaines adresses ne sont pas placées.':lost.length?`Non trouvées : ${lost.map(title).join(', ')}.`:'';
+}
+
 function applyTheme(){const r=document.documentElement;if(S.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',S.theme)}
 function dialog(t,msg,ok,fn){const d=document.createElement('div');d.className='scrim';
   d.innerHTML=`<div class="dlg" role="alertdialog" aria-modal="true"><h2>${esc(t)}</h2><p>${esc(msg)}</p><div><button class="btn" id="dNo">Annuler</button><button class="btn main" style="font-size:17px" id="dOk">${esc(ok)}</button></div></div>`;
   document.body.appendChild(d);d.querySelector('#dNo').onclick=()=>d.remove();d.querySelector('#dOk').onclick=()=>{d.remove();fn()}}
 async function exportData(){
-  const stamp=new Date().toISOString().slice(0,10),name=`tournee-${stamp}.json`,data={...S,open:null};
+  const name=`tournee-${latest()}.json`,data={...S,open:null};
   const file=new File([JSON.stringify(data,null,1)],name,{type:'application/json'});
   const done=()=>{S.lastExport=Date.now();save(false);render();toast('Sauvegarde créée.')};
   try{ if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});done();return} }
@@ -265,11 +425,11 @@ async function exportData(){
 }
 document.getElementById('importFile').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   try{const d=JSON.parse(await f.text());if(!Array.isArray(d.buildings)||!Array.isArray(d.seasons))throw 0;
-    dialog('Restaurer cette sauvegarde ?',`${d.buildings.length} adresses. Les données actuelles seront remplacées.`,'Restaurer',()=>{S=Object.assign(blank(),d,{open:null,theme:S.theme});save(false);go('list');toast('Sauvegarde restaurée.')})
+    dialog('Restaurer cette sauvegarde ?',`${d.buildings.length} adresses. Les données actuelles seront remplacées.`,'Restaurer',()=>{S=migrate(Object.assign(blank(),d,{open:null,theme:S.theme}));save(false);go('list');toast('Sauvegarde restaurée.')})
   }catch(_){toast("Ce fichier n'est pas une sauvegarde de l'application.")}});
 
 /* ---------- Navigation ---------- */
-function render(){({list:renderList,building:renderBuilding,edit:renderEdit,menu:renderMenu})[view.name]()}
+function render(){mapToken++;if(mapObj){mapObj.remove();mapObj=null}({list:renderList,building:renderBuilding,edit:renderEdit,menu:renderMenu,map:renderMap})[view.name]()}
 function go(name,id){view={name,id};render()}
 function openBuilding(id){if(!readOnly()){S.open={id,start:Date.now()};save(false)}go('building',id)}
 document.addEventListener('click',e=>{
@@ -278,13 +438,22 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;const a=t.dataset.act,b=view.id&&byId(view.id);
   if(a==='new')go('edit');
   else if(a==='menu')go('menu');
+  else if(a==='map')go('map');
+  else if(a==='syncon')activateSync();
+  else if(a==='syncnow'){sync.error='';pushNow(true).then(()=>toast(sync.error?'Envoi impossible.':navigator.onLine===false?'Pas de réseau pour le moment.':'Envoyé sur GitHub.'))}
+  else if(a==='syncrestore')restoreSync();
+  else if(a==='syncoff')dialog('Désactiver la sauvegarde GitHub ?','Le jeton est effacé de ce téléphone. La sauvegarde déjà envoyée reste sur GitHub.','Désactiver',()=>{sync={};try{localStorage.removeItem(SYNC_KEY)}catch(e){}render()});
   else if(a==='back')go('list');
   else if(a==='clear'){query='';render()}
   else if(a==='open')openBuilding(t.dataset.id);
-  else if(a==='close'){S.open=null;save(false);go('list')}
+  else if(a==='close'){S.open=null;save(false);go('list');pushNow()}
   else if(a==='edit')go('edit',view.id);
   else if(a==='cancel'){view.id?go('building',view.id):go('list')}
-  else if(a==='saveaddr')saveAddr();
+  else if(a==='saveaddr')saveAddr(false);
+  else if(a==='force')saveAddr(true);
+  else if(a==='stype')setType(t.dataset.t);
+  else if(a==='clearname'){const n=document.getElementById('f-street');n.value='';n.focus()}
+  else if(a==='usename'){const x=byId(t.dataset.id);document.getElementById('f-street').value=x.sname;setType(x.stype);saveAddr(false)}
   else if(a==='floor'){if(readOnly())return;const f=b.floors[+t.dataset.f];f.off=!f.off;save();const y=document.getElementById('grid').scrollTop;render();document.getElementById('grid').scrollTop=y}
   else if(a==='addfloor'){b.floors.push({off:false});save();render();const g=document.getElementById('grid');g.scrollTop=g.scrollHeight}
   else if(a==='rmfloor'){b.floors.pop();save();render()}
@@ -301,10 +470,13 @@ document.addEventListener('click',e=>{
 S=load();
 if(framed&&!S.buildings.length){const y=S.season,mk=(num,street,code,notes,cs,off)=>{const fl=newFloors();(off||[]).forEach(i=>fl[i].off=true);return{id:'ex'+num+street.length,num,street,code,notes,floors:fl,visits:{[y]:cs}}},old=1;
   S.buildings=[mk('12','Rue des Exemples','47B21','Interphone : Martin',{'0-0-0':{s:'A',t:old},'0-0-1':{s:'X',t:old},'0-1-0':{s:'X',t:old},'1-0-0':{s:'R',t:old},'1-2-0':{s:'A',t:old},'2-3-0':{s:'A',t:old},'3-0-0':{s:'X',t:old}},[5]),mk('14 bis','Rue des Exemples','','',{'0-0-0':{s:'X',t:old}}),mk('3','Avenue de la Démo','1985','',{})]}
+migrate(S);
 applyTheme();
 if(S.open&&byId(S.open.id)&&Date.now()-S.open.start<SESSION_MAX&&!readOnly())view={name:'building',id:S.open.id};
 else if(S.open){S.open=null;save(false)}
 render();
+if(!S.buildings.length&&!framed){try{idb('readonly',s=>s.get('data')).then(j=>{if(!j)return;const d=JSON.parse(j);if(d.buildings&&d.buildings.length&&!S.buildings.length){S=migrate(Object.assign(blank(),d));save(false);render();toast('Données récupérées depuis la copie de secours.')}}).catch(()=>{})}catch(e){}}
+if(!framed){window.addEventListener('online',()=>pushNow());document.addEventListener('visibilitychange',()=>pushNow());setInterval(()=>pushNow(),60000);pushNow()}
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 if('serviceWorker' in navigator&&!framed)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>

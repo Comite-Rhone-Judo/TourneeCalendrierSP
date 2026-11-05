@@ -12,3 +12,18 @@ Ne supprimez pas l'icône : cela efface les données. Sauvegardez régulièremen
 CHANGER L'ICÔNE D'UNE APPLICATION DÉJÀ INSTALLÉE
 L'iPhone garde l'icône choisie à l'installation. Supprimer l'icône efface les données, donc :
 sauvegardez d'abord dans un fichier (Réglages), supprimez l'icône, réinstallez depuis Safari, puis restaurez le fichier.
+
+SAUVEGARDE AUTOMATIQUE SUR GITHUB
+1. Créez un second dépôt, PRIVÉ, par exemple tournee-data (cochez « Add a README »).
+   Le dépôt de l'application reste distinct : il ne contient aucune donnée.
+2. GitHub > Settings > Developer settings > Personal access tokens > Fine-grained tokens > Generate new token.
+   Repository access : Only select repositories > tournee-data.
+   Permissions : Contents > Read and write. Notez la date d'expiration choisie.
+3. Dans l'application : Réglages > Sauvegarde automatique, saisissez compte/tournee-data, collez le jeton, touchez Vérifier et activer.
+Les envois partent quand l'application est ouverte et qu'il y a du réseau. Une saisie hors réseau part au retour de celui-ci.
+Après une réinstallation, refaites l'étape 3 : l'application propose de récupérer les données.
+
+CARTE
+Réglages : saisissez le code postal et la ville. Le bouton Carte de la liste place les adresses (France uniquement, réseau obligatoire).
+Les positions trouvées sont gardées et ne sont pas redemandées. Elles viennent de la Base Adresse Nationale, la carte du Plan IGN.
+Ces services reçoivent les adresses demandées, jamais les codes, les notes ou les statuts.
