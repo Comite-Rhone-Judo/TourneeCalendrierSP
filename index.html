@@ -73,7 +73,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);background:var(--sheet);border:2px solid var(--line);border-radius:8px;padding:12px;-webkit-appearance:none;appearance:none}
 .search button{position:absolute;right:12px;top:4px;height:52px;width:48px;font-size:24px;color:var(--mut)}
 .scroll{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.street{position:sticky;top:0;background:var(--raised);padding:7px 12px;font-weight:700;font-size:18px;z-index:1}
+.street{position:sticky;top:0;display:flex;align-items:center;gap:8px;width:100%;min-height:46px;text-align:left;background:var(--raised);padding:7px 12px;font-weight:700;font-size:18px;z-index:1;border-bottom:1px solid var(--line)}
+.street .chev{flex:none;width:18px;font-size:16px}
+.street .cnt{font-weight:400;color:var(--mut)}
 .row{display:flex;align-items:center;gap:10px;width:100%;min-height:58px;padding:6px 12px;border-bottom:1px solid var(--line);text-align:left}
 .row b{flex:1;font-size:23px;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
 .row .sum{display:flex;gap:5px;flex:none;font-size:17px}
@@ -136,7 +138,7 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 <script>
 'use strict';
 const KEY='tournee-calendriers-v1', SESSION_MAX=12*3600*1000, DOORS=6, PASSES=2, BASE_FLOORS=6;
-const APP_VERSION='7 (7 novembre 2026)';
+const APP_VERSION='8 (7 novembre 2026)';
 const NEXT={A:'X',X:'R',R:'-','-':null};
 const CLS={A:'A',X:'X',R:'R','-':'K'},SHOW={A:'A',X:'X',R:'R','-':'–'};
 const LABEL={A:'Absent',X:'Vente',R:'Refus','-':'Porte condamnée'};
@@ -198,12 +200,19 @@ function renderResults(){
   const list=S.buildings.filter(b=>norm(title(b)).includes(q)).sort((a,b)=>coll.compare(a.sname,b.sname)||coll.compare(a.stype,b.stype)||coll.compare(a.num,b.num));
   if(!S.buildings.length){el.innerHTML=`<div class="empty-msg">Aucune adresse. Touchez « Nouvel immeuble » en arrivant au pied du premier immeuble.</div>`;return}
   if(!list.length){el.innerHTML=`<div class="empty-msg">Aucune adresse ne correspond à « ${esc(query)} ».</div>`;return}
-  let html='',cur=null;
-  for(const b of list){
-    if(norm(b.street)!==cur){cur=norm(b.street);html+=`<div class="street">${esc(b.street)}</div>`}
-    const {n,any}=summary(b);
-    const sum=any?['X','A','R'].filter(k=>n[k]).map(k=>`<span class="chip ${k}" aria-label="${LABEL[k]} : ${n[k]}">${k} ${n[k]}</span>`).join(''):`<em>Pas encore visité</em>`;
-    html+=`<button class="row" data-act="open" data-id="${b.id}"><b>${esc(b.num||'–')}</b><span class="sum">${sum}</span></button>`;
+  const groups=[];for(const b of list){const k=norm(b.street);if(!groups.length||groups[groups.length-1].k!==k)groups.push({k,name:b.street,items:[]});groups[groups.length-1].items.push(b)}
+  const folded=new Set(S.folded||[]),searching=!!q;
+  let html='';
+  for(const gr of groups){
+    const shut=!searching&&folded.has(gr.k);
+    html+=searching?`<div class="street">${esc(gr.name)}</div>`
+      :`<button class="street" data-act="fold" data-k="${esc(gr.k)}" aria-expanded="${!shut}"><span class="chev">${shut?'▸':'▾'}</span>${esc(gr.name)}${shut?` <span class="cnt">(${gr.items.length})</span>`:''}</button>`;
+    if(shut)continue;
+    for(const b of gr.items){
+      const {n,any}=summary(b);
+      const sum=any?['X','A','R'].filter(k=>n[k]).map(k=>`<span class="chip ${k}" aria-label="${LABEL[k]} : ${n[k]}">${k} ${n[k]}</span>`).join(''):`<em>Pas encore visité</em>`;
+      html+=`<button class="row" data-act="open" data-id="${b.id}"><b>${esc(b.num||'–')}</b><span class="sum">${sum}</span></button>`;
+    }
   }
   el.innerHTML=html;
 }
@@ -449,6 +458,7 @@ document.addEventListener('click',e=>{
   if(a==='new')go('edit');
   else if(a==='menu')go('menu');
   else if(a==='map')go('map');
+  else if(a==='fold'){const f=new Set(S.folded||[]),k=t.dataset.k;f.has(k)?f.delete(k):f.add(k);S.folded=[...f];save(false);const sc=document.getElementById('results'),y=sc.scrollTop;renderResults();sc.scrollTop=y}
   else if(a==='update')checkUpdate(true);
   else if(a==='syncon')activateSync();
   else if(a==='syncnow'){sync.error='';pushNow(true).then(()=>toast(sync.error?'Envoi impossible.':navigator.onLine===false?'Pas de réseau pour le moment.':'Envoyé sur GitHub.'))}

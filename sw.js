@@ -1,6 +1,6 @@
 // L'application s'ouvre toujours depuis le téléphone. S'il y a du réseau, la copie est rafraîchie
 // en contournant le cache HTTP, pour que la nouvelle version soit prise dès sa publication.
-const VERSION='7';
+const VERSION='8';
 const CACHE='tournee-v'+VERSION;
 const FILES=['./','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png','leaflet.js','leaflet.css'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE)
