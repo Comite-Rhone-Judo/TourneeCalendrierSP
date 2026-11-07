@@ -14,12 +14,12 @@
 <style>
 /* Concept : la page du carnet papier, plein écran, lisible de nuit. Thème sombre d'abord. */
 :root{--bg:#000;--sheet:#15171a;--raised:#262a2f;--line:#5a606a;--ink:#fff;--mut:#bcc2ca;--floor:#6b7079;--floor-ink:#fff;
---x:#2fd36f;--x-ink:#00210d;--a:#ffcf33;--a-ink:#000;--r:#ff5b50;--r-ink:#000;--danger:#ff7a70;--warn-bg:#3a2f00;
+--x:#2fd36f;--x-ink:#00210d;--a:#ffcf33;--a-ink:#000;--r:#ff5b50;--r-ink:#000;--k:#4a4f57;--k-ink:#e6e9ed;--danger:#ff7a70;--warn-bg:#3a2f00;
 --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;color-scheme:dark}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9ebee;--sheet:#fff;--raised:#dcdfe3;--line:#2b2e33;--ink:#000;--mut:#454a51;--floor:#646971;--floor-ink:#fff;
---x:#0d8a40;--x-ink:#fff;--a:#ffc400;--a-ink:#000;--r:#d3261c;--r-ink:#fff;--danger:#b81f16;--warn-bg:#fff0b8;color-scheme:light}}
+--x:#0d8a40;--x-ink:#fff;--a:#ffc400;--a-ink:#000;--r:#d3261c;--r-ink:#fff;--k:#9ba0a8;--k-ink:#000;--danger:#b81f16;--warn-bg:#fff0b8;color-scheme:light}}
 :root[data-theme="light"]{--bg:#e9ebee;--sheet:#fff;--raised:#dcdfe3;--line:#2b2e33;--ink:#000;--mut:#454a51;--floor:#646971;--floor-ink:#fff;
---x:#0d8a40;--x-ink:#fff;--a:#ffc400;--a-ink:#000;--r:#d3261c;--r-ink:#fff;--danger:#b81f16;--warn-bg:#fff0b8;color-scheme:light}
+--x:#0d8a40;--x-ink:#fff;--a:#ffc400;--a-ink:#000;--r:#d3261c;--r-ink:#fff;--k:#9ba0a8;--k-ink:#000;--danger:#b81f16;--warn-bg:#fff0b8;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;background:var(--bg);padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:17px/1.3 var(--font);overflow:hidden;overscroll-behavior:none}
@@ -51,6 +51,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .c.A{background:var(--a);color:var(--a-ink)}
 .c.X{background:var(--x);color:var(--x-ink)}
 .c.R{background:var(--r);color:var(--r-ink)}
+.c.K{background:var(--k);color:var(--k-ink);font-size:30px}
 .c.now{box-shadow:inset 0 0 0 3px var(--ink)}
 .c:active{opacity:.7}
 .offbox{display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:17px;background:repeating-linear-gradient(135deg,transparent 0 9px,var(--raised) 9px 18px)}
@@ -59,10 +60,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .floormore .btn{flex:1 1 40%;width:auto;min-height:44px;padding:0 6px;font-size:16px}
 .notes{flex:none;margin:0 6px;border:2px solid var(--line);border-top:0;background:var(--sheet);min-height:40px;padding:6px 10px;text-align:left;width:calc(100% - 12px);font-size:17px;overflow-wrap:anywhere;white-space:pre-wrap}
 .notes.empty{color:var(--mut)}
-.legend{flex:none;display:flex;justify-content:space-between;gap:6px;padding:7px 8px 0;font-size:16px}
+.legend{flex:none;display:flex;justify-content:space-between;gap:4px;padding:7px 8px 0;font-size:15px}
 .legend span{display:flex;align-items:center;gap:6px}
 .chip{display:inline-block;min-width:26px;padding:1px 6px;border-radius:4px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
-.chip.A{background:var(--a);color:var(--a-ink)}.chip.X{background:var(--x);color:var(--x-ink)}.chip.R{background:var(--r);color:var(--r-ink)}
+.chip.A{background:var(--a);color:var(--a-ink)}.chip.X{background:var(--x);color:var(--x-ink)}.chip.R{background:var(--r);color:var(--r-ink)}.chip.K{background:var(--k);color:var(--k-ink)}
 
 /* Liste */
 .top{flex:none;display:flex;align-items:center;gap:8px;padding:8px 8px 4px}
@@ -90,6 +91,8 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 .types{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .types .btn{min-height:44px;padding:0 2px;font-size:15px;width:auto}
 .types .on{background:var(--ink);color:var(--bg)}
+.form label.check{flex-direction:row;align-items:center;gap:12px;color:var(--ink);font-size:19px;min-height:48px}
+.check input{width:30px;height:30px;flex:none;margin:0;padding:0;-webkit-appearance:checkbox;appearance:auto;accent-color:var(--x)}
 .preview{font-size:21px;font-weight:700;min-height:27px}
 .clearable{position:relative;display:block}
 .clearable input{padding-right:40px}
@@ -99,6 +102,7 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 .mapmsg{flex:none;padding:6px 12px;font-size:16px;color:var(--mut)}
 .mapmsg:empty{display:none}
 .pin{display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;padding:3px 7px;border-radius:6px;font:800 15px/1.2 var(--font);border:2px solid #000;background:#d5d9de;color:#000}
+.pin .dg{font-style:normal;margin-left:4px;padding:0 4px;border-radius:3px;background:#000;color:#fff;font-size:12px;vertical-align:2px}
 .pin.a{background:#ffcf33}.pin.d{background:#2fd36f}.pin.approx{border-style:dashed}
 .pinicon{background:none;border:0}
 .pop{display:flex;flex-direction:column;gap:8px;min-width:190px;font:16px var(--font);color:#000}
@@ -131,20 +135,21 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 <script>
 'use strict';
 const KEY='tournee-calendriers-v1', SESSION_MAX=12*3600*1000, DOORS=6, PASSES=2, BASE_FLOORS=6;
-const NEXT={A:'X',X:'R',R:null};
-const LABEL={A:'Absent',X:'Vente',R:'Refus'};
+const NEXT={A:'X',X:'R',R:'-','-':null};
+const CLS={A:'A',X:'X',R:'R','-':'K'},SHOW={A:'A',X:'X',R:'R','-':'–'};
+const LABEL={A:'Absent',X:'Vente',R:'Refus','-':'Porte condamnée'};
 const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 const standalone=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 const coll=new Intl.Collator('fr',{numeric:true,sensitivity:'base'});
 const app=document.getElementById('app');
 let storageOk=true, view={name:'list'}, query='', S;
 
-const TYPES=['rue','avenue','boulevard','allée','place','impasse','chemin',''];
+const TYPES=['rue','avenue','boulevard','allée','place','impasse','chemin','quai'];
 const fullStreet=(t,n)=>(t?t+' ':'')+n;
-function parseStreet(s){const m=String(s||'').trim().match(/^(rue|avenue|av\.?|boulevard|bd|all[ée]e|place|impasse|chemin)\s+(.+)$/i);
+function parseStreet(s){const m=String(s||'').trim().match(/^(rue|avenue|av\.?|boulevard|bd|all[ée]e|place|impasse|chemin|quai)\s+(.+)$/i);
   if(!m)return{stype:'',sname:String(s||'').trim()};
   const k=norm(m[1]);return{stype:k.startsWith('av')?'avenue':k==='bd'?'boulevard':k==='allee'?'allée':k,sname:m[2]}}
-function migrate(d){(d.buildings||[]).forEach(b=>{if(b.sname===undefined){Object.assign(b,parseStreet(b.street))}b.street=fullStreet(b.stype,b.sname)});
+function migrate(d){(d.buildings||[]).forEach(b=>{if(b.digi===undefined)b.digi=!!b.code;if(b.sname===undefined){Object.assign(b,parseStreet(b.street))}b.street=fullStreet(b.stype,b.sname)});
   if(!d.v2){const p=parseStreet(d.lastStreet);d.lastStreet=p.sname;d.lastType=p.stype||'rue';d.v2=1}return d}
 function levenshtein(a,b){let p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
 const normNum=s=>norm(s).replace(/\s/g,'');
@@ -167,7 +172,7 @@ const cells=b=>(b.visits&&b.visits[S.season])||{};
 let toastT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3200)}
 
 function summary(b){const c=cells(b),n={A:0,X:0,R:0};let any=false;
-  b.floors.forEach((f,fi)=>{if(f.off)return;for(let d=0;d<DOORS;d++){const l=c[`${fi}-${d}-1`]||c[`${fi}-${d}-0`];if(l){n[l.s]++;any=true}}});return{n,any}}
+  b.floors.forEach((f,fi)=>{if(f.off)return;for(let d=0;d<DOORS;d++){const l=c[`${fi}-${d}-1`]||c[`${fi}-${d}-0`];if(l&&l.s!=='-'){n[l.s]++;any=true}}});return{n,any}}
 
 /* ---------- Liste ---------- */
 function renderList(){
@@ -204,8 +209,8 @@ function renderResults(){
 /* ---------- Page immeuble ---------- */
 function editable(c){return !readOnly()&&S.open&&c&&c.t>=S.open.start}
 function cellHtml(b,fi,d,p){const c=cells(b)[`${fi}-${d}-${p}`];
-  const cls=c?c.s+(editable(c)?' now':''):'';
-  return `<button class="c ${cls}" data-f="${fi}" data-d="${d}" data-p="${p}" aria-label="${esc(floorName(fi))}, porte ${d+1}, passage ${p+1} : ${c?LABEL[c.s]:'vide'}">${c?c.s:''}</button>`}
+  const cls=c?CLS[c.s]+(editable(c)?' now':''):'';
+  return `<button class="c ${cls}" data-f="${fi}" data-d="${d}" data-p="${p}" aria-label="${esc(floorName(fi))}, porte ${d+1}, passage ${p+1} : ${c?LABEL[c.s]:'vide'}">${c?SHOW[c.s]:''}</button>`}
 function doorHtml(b,fi,n){let h=`<div class="door"><span class="num">${n+1}</span>`;for(let p=0;p<PASSES;p++)h+=cellHtml(b,fi,n,p);return h+'</div>'}
 function hasData(b,fi){return Object.values(b.visits||{}).some(v=>Object.keys(v).some(k=>k.startsWith(fi+'-')))}
 function renderBuilding(){
@@ -215,10 +220,10 @@ function renderBuilding(){
     <button class="flabel" data-act="floor" data-f="${fi}" aria-pressed="${f.off}" aria-label="${floorName(fi)} : ${f.off?'pas de porte, toucher pour rétablir':'toucher pour indiquer pas de porte'}">${floorName(fi)}<i>${f.off?'✕':''}</i></button>
     ${f.off?`<div class="offbox">Pas de porte</div>`:`<div class="doors">${order.map(n=>doorHtml(b,fi,n)).join('')}</div>`}</div>`).join('');
   const last=b.floors.length-1, canRemove=b.floors.length>BASE_FLOORS&&!hasData(b,last)&&!readOnly();
-  app.innerHTML=`<div class="head"><button class="addr" data-act="edit" aria-label="Modifier l'adresse">${esc(title(b))}</button><button class="code" data-act="edit" aria-label="Modifier le code"><small>Code</small>${esc(b.code)}</button></div>
+  app.innerHTML=`<div class="head"><button class="addr" data-act="edit" aria-label="Modifier l'adresse">${esc(title(b))}</button><button class="code" data-act="edit" aria-label="Modifier le code">${b.digi?`<small>Digicode</small>${esc(b.code)}`:'<small>Interphone</small>'}</button></div>
   <div class="grid" id="grid">${floors}${readOnly()?'':`<div class="floormore"><button class="btn" data-act="addfloor">Ajouter un étage</button><button class="btn" data-act="edit">Modifier ou supprimer</button>${canRemove?`<button class="btn" data-act="rmfloor">Retirer le ${floorName(last)}</button>`:''}</div>`}</div>
   <button class="notes ${b.notes?'':'empty'}" data-act="edit">${esc(b.notes||'Notes')}</button>
-  <div class="legend"><span><i class="chip A" style="font-style:normal">A</i>Absent</span><span><i class="chip X" style="font-style:normal">X</i>Vente</span><span><i class="chip R" style="font-style:normal">R</i>Refus</span></div>
+  <div class="legend"><span><i class="chip A" style="font-style:normal">A</i>Absent</span><span><i class="chip X" style="font-style:normal">X</i>Vente</span><span><i class="chip R" style="font-style:normal">R</i>Refus</span><span><i class="chip K" style="font-style:normal">–</i>Condamnée</span></div>
   <div class="foot"><button class="btn main" data-act="close">Fermer l'immeuble</button></div>`;
 }
 function tapCell(btn){
@@ -246,15 +251,16 @@ app.addEventListener('contextmenu',e=>{if(e.target.closest('.c'))e.preventDefaul
 let formType='rue';
 function renderEdit(){
   const b=view.id?byId(view.id):null, names=[...new Map(S.buildings.map(x=>[norm(x.sname),x.sname])).values()].sort(coll.compare);
-  formType=b?b.stype:(S.lastType??'rue');
+  formType=b?b.stype:(S.lastType||'rue');
   app.innerHTML=`<div class="top"><h1>${b?"Modifier l'adresse":'Nouvel immeuble'}</h1></div>
   <div class="form">
     <div class="pair"><label>Numéro<input id="f-num" autocomplete="off" autocorrect="off" value="${esc(b?b.num:'')}"></label>
     <label>Nom de la voie<span class="clearable"><input id="f-street" list="streets" autocomplete="off" autocapitalize="words" value="${esc(b?b.sname:S.lastStreet)}"><button type="button" data-act="clearname" aria-label="Effacer le nom">×</button></span></label></div>
     <datalist id="streets">${names.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
-    <div class="types" id="types">${TYPES.map(t=>`<button type="button" class="btn ${t===formType?'on':''}" data-act="stype" data-t="${esc(t)}">${t?t[0].toUpperCase()+t.slice(1):'Autre'}</button>`).join('')}</div>
+    <div class="types" id="types">${TYPES.map(t=>`<button type="button" class="btn ${t===formType?'on':''}" data-act="stype" data-t="${esc(t)}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>
     <div class="preview" id="f-prev"></div>
-    <label>Code (digicode, interphone)<input id="f-code" autocomplete="off" autocorrect="off" value="${esc(b?b.code:'')}"></label>
+    <label class="check"><input type="checkbox" id="f-digi" ${b&&b.digi?'checked':''}>Digicode (pas d'interphone)</label>
+    <label id="f-codewrap" ${b&&b.digi?'':'hidden'}>Code<input id="f-code" autocomplete="off" autocorrect="off" autocapitalize="characters" value="${esc(b?b.code:'')}"></label>
     <label>Notes<textarea id="f-notes">${esc(b?b.notes:'')}</textarea></label>
     <div class="err" id="f-err" hidden></div>
     ${b&&!readOnly()?`<button class="btn danger" data-act="delete">Supprimer cette adresse</button>`:''}
@@ -265,12 +271,13 @@ function renderEdit(){
   nm.addEventListener('focus',()=>nm.select());
   nm.addEventListener('input',()=>{const hit=S.buildings.find(x=>norm(x.sname)===norm(nm.value));if(hit)setType(hit.stype);prev()});
   num.addEventListener('input',prev);prev();
+  const dg=document.getElementById('f-digi');dg.addEventListener('change',()=>{document.getElementById('f-codewrap').hidden=!dg.checked;if(dg.checked)document.getElementById('f-code').focus()});
   if(!b)num.focus();
 }
 function setType(t){formType=t;document.querySelectorAll('#types .btn').forEach(x=>x.classList.toggle('on',x.dataset.t===t));const n=document.getElementById('f-street').value.trim(),m=document.getElementById('f-num').value.trim();document.getElementById('f-prev').textContent=(m+' '+fullStreet(t,n)).trim()}
 function saveAddr(force){
   const val=id=>document.getElementById(id).value.trim();
-  const num=val('f-num'),sname=val('f-street'),code=val('f-code'),notes=val('f-notes'),err=document.getElementById('f-err'),street=fullStreet(formType,sname);
+  const num=val('f-num'),sname=val('f-street'),digi=document.getElementById('f-digi').checked,code=digi?val('f-code'):'',notes=val('f-notes'),err=document.getElementById('f-err'),street=fullStreet(formType,sname);
   if(!sname){err.textContent='Indiquez le nom de la voie.';err.hidden=false;return}
   const dup=S.buildings.find(x=>x.id!==view.id&&normNum(x.num)===normNum(num)&&norm(x.street)===norm(street));
   if(dup){err.innerHTML=`Le ${esc(title(dup))} existe déjà.<button class="btn" style="margin-top:8px" data-act="open" data-id="${dup.id}">Ouvrir sa page</button>`;err.hidden=false;err.scrollIntoView();return}
@@ -279,9 +286,9 @@ function saveAddr(force){
       const near=others.find(x=>{const m=norm(x.sname);return n.length>=4&&levenshtein(n,m)<=(n.length<8?1:2)});
       if(near){err.innerHTML=`Vouliez-vous dire « ${esc(near.street)} » ?<button class="btn" style="margin-top:8px" data-act="usename" data-id="${near.id}">Oui, corriger</button><button class="btn" style="margin-top:8px" data-act="force">Non, garder « ${esc(street)} »</button>`;err.hidden=false;err.scrollIntoView();return}}}
   S.lastStreet=sname;S.lastType=formType;
-  if(view.id){Object.assign(byId(view.id),{num,street,stype:formType,sname,code,notes});save();go('building',view.id)}
+  if(view.id){Object.assign(byId(view.id),{num,street,stype:formType,sname,digi,code,notes});save();go('building',view.id)}
   else{const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    S.buildings.push({id,num,street,stype:formType,sname,code,notes,floors:newFloors(),visits:{}});save();openBuilding(id)}
+    S.buildings.push({id,num,street,stype:formType,sname,digi,code,notes,floors:newFloors(),visits:{}});save();openBuilding(id)}
 }
 
 /* ---------- Réglages ---------- */
@@ -292,7 +299,7 @@ function renderMenu(){
     <button class="btn" data-act="export">Sauvegarder dans un fichier</button><button class="btn" data-act="import">Restaurer depuis un fichier</button></div>
   <div class="sec"><h2>Tournée</h2>
     ${seasons.length>1?`<div class="seg">${seasons.map(s=>`<button class="btn ${s===S.season?'on':''}" data-act="season" data-y="${s}">${s}</button>`).join('')}</div>`:''}
-    <p>Garde les adresses, les codes, les notes et les étages. Les cases repartent vides, et les tournées passées restent consultables.</p>
+    <p>Garde les adresses, les codes, les notes, les étages et les portes condamnées. Les autres cases repartent vides, et les tournées passées restent consultables.</p>
     <button class="btn" data-act="newseason">Commencer la tournée ${y}</button></div>
   ${framed?'':`<div class="sec"><h2>Sauvegarde automatique sur GitHub</h2>
     ${sync.repo?`<p>Dépôt privé ${esc(sync.repo)}. Les données partent quand l'application est ouverte et qu'il y a du réseau.</p><div class="msgline" id="sync-msg"></div>
@@ -371,11 +378,11 @@ function restoreSync(){dialog('Récupérer la sauvegarde GitHub ?','Les données
 let mapObj=null,mapToken=0;
 function loadLeaflet(){if(window.L)return Promise.resolve();return new Promise((ok,ko)=>{const c=document.createElement('link');c.rel='stylesheet';c.href='leaflet.css';document.head.appendChild(c);const s=document.createElement('script');s.src='leaflet.js';s.onload=ok;s.onerror=ko;document.head.appendChild(s)})}
 const geoQuery=b=>`${b.num} ${b.street} ${S.postcode} ${S.city}`.replace(/\s+/g,' ').trim();
-function mapState(b){const c=cells(b);let any=false,todo=false;b.floors.forEach((f,fi)=>{if(f.off)return;for(let d=0;d<DOORS;d++){const a=c[`${fi}-${d}-0`],z=c[`${fi}-${d}-1`];if(a||z)any=true;if(a&&a.s==='A'&&!z)todo=true}});return todo?'a':any?'d':'n'}
+function mapState(b){const c=cells(b);let any=false,todo=false;b.floors.forEach((f,fi)=>{if(f.off)return;for(let d=0;d<DOORS;d++){let a=c[`${fi}-${d}-0`],z=c[`${fi}-${d}-1`];if(a&&a.s==='-')a=null;if(z&&z.s==='-')z=null;if(a||z)any=true;if(a&&a.s==='A'&&!z)todo=true}});return todo?'a':any?'d':'n'}
 function addPin(b,layer){const g=b.geo;
-  const m=L.marker([g.lat,g.lon],{icon:L.divIcon({className:'pinicon',iconSize:[0,0],html:`<span class="pin ${mapState(b)==='n'?'':mapState(b)} ${g.approx?'approx':''}">${esc(b.num||'•')}</span>`})}).addTo(layer);
+  const m=L.marker([g.lat,g.lon],{icon:L.divIcon({className:'pinicon',iconSize:[0,0],html:`<span class="pin ${mapState(b)==='n'?'':mapState(b)} ${g.approx?'approx':''}">${esc(b.num||'•')}${b.digi?'<i class="dg">D</i>':''}</span>`})}).addTo(layer);
   const {n,any}=summary(b);
-  m.bindPopup(`<div class="pop"><b>${esc(title(b))}</b><div class="sum">${any?['X','A','R'].filter(k=>n[k]).map(k=>`<span class="chip ${k}">${k} ${n[k]}</span>`).join(''):'Pas encore visité'}</div>${g.approx?'<span>Position approximative</span>':''}<button>Ouvrir la page</button></div>`);
+  m.bindPopup(`<div class="pop"><b>${esc(title(b))}</b><div class="sum">${any?['X','A','R'].filter(k=>n[k]).map(k=>`<span class="chip ${k}">${k} ${n[k]}</span>`).join(''):'Pas encore visité'}</div>${b.digi?`<span>Digicode${b.code?' : '+esc(b.code):''}</span>`:''}${g.approx?'<span>Position approximative</span>':''}<button>Ouvrir la page</button></div>`);
   m.on('popupopen',e=>{e.popup.getElement().querySelector('button').onclick=()=>openBuilding(b.id)});
   return m}
 function mapMessage(t,act,label){app.innerHTML=`<div class="top"><h1>Carte</h1></div><div class="empty-msg">${esc(t)}</div><div class="foot" style="margin-top:auto;display:grid;gap:8px">${act?`<button class="btn" data-act="${act}">${esc(label)}</button>`:''}<button class="btn main" data-act="back">Retour à la liste</button></div>`}
@@ -461,7 +468,7 @@ document.addEventListener('click',e=>{
   else if(a==='export')exportData();
   else if(a==='import')document.getElementById('importFile').click();
   else if(a==='season'){S.season=+t.dataset.y;S.open=null;save(false);go('list')}
-  else if(a==='newseason'){const y=latest()+1;dialog(`Commencer la tournée ${y} ?`,'Les adresses et les étages sont repris, les cases repartent vides. La tournée précédente reste consultable.','Commencer',()=>{S.seasons.push(y);S.season=y;S.open=null;save();go('list');toast(`Tournée ${y} commencée.`)})}
+  else if(a==='newseason'){const y=latest()+1;dialog(`Commencer la tournée ${y} ?`,'Les adresses, les étages et les portes condamnées sont repris, les autres cases repartent vides. La tournée précédente reste consultable.','Commencer',()=>{const prev=latest();S.buildings.forEach(b=>{const o=(b.visits||{})[prev]||{},n={};Object.entries(o).forEach(([k,v])=>{if(v.s==='-'){const[f,d]=k.split('-');n[`${f}-${d}-0`]={s:'-',t:1}}});b.visits=b.visits||{};b.visits[y]=n});S.seasons.push(y);S.season=y;S.open=null;save();go('list');toast(`Tournée ${y} commencée.`)})}
   else if(a==='reset')dialog('Effacer toutes les données ?',`${S.buildings.length} adresses et toutes les tournées seront supprimées de ce téléphone. Sans fichier de sauvegarde, elles seront perdues.`,'Tout effacer',()=>{const theme=S.theme;S=blank();S.theme=theme;query='';save(false);go('list');toast('Toutes les données sont effacées.')});
   else if(a==='theme'){S.theme=t.dataset.t;save(false);applyTheme();render()}
 });
