@@ -27,3 +27,8 @@ CARTE
 Réglages : saisissez le code postal et la ville. Le bouton Carte de la liste place les adresses (France uniquement, réseau obligatoire).
 Les positions trouvées sont gardées et ne sont pas redemandées. Elles viennent de la Base Adresse Nationale, la carte du Plan IGN.
 Ces services reçoivent les adresses demandées, jamais les codes, les notes ou les statuts.
+
+METTRE À JOUR L'APPLICATION
+1. Remplacez les fichiers dans le dépôt et attendez la fin du déploiement (onglet Actions, coche verte).
+2. Ouvrez l'application avec du réseau : un bandeau vert « Nouvelle version installée » apparaît, touchez-le.
+   Sinon : Réglages > Rechercher une mise à jour. Le numéro de version est affiché dans Réglages.

@@ -124,6 +124,7 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 .dlg{background:var(--sheet);border:2px solid var(--line);border-radius:10px;padding:16px;width:100%;display:flex;flex-direction:column;gap:12px}
 .dlg h2{margin:0;font-size:21px}.dlg p{margin:0}
 .dlg div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#updbar{position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));z-index:7;min-height:56px;padding:8px 14px;border-radius:10px;background:var(--x);color:var(--x-ink);font-weight:800;font-size:17px}
 #toast{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:8px;font-weight:600;z-index:6;text-align:center}
 @media (prefers-reduced-motion:no-preference){.c{transition:opacity .08s}}
 </style>
@@ -135,6 +136,7 @@ input,textarea{width:100%;font:inherit;font-size:20px;color:var(--ink);backgroun
 <script>
 'use strict';
 const KEY='tournee-calendriers-v1', SESSION_MAX=12*3600*1000, DOORS=6, PASSES=2, BASE_FLOORS=6;
+const APP_VERSION='7 (7 novembre 2026)';
 const NEXT={A:'X',X:'R',R:'-','-':null};
 const CLS={A:'A',X:'X',R:'R','-':'K'},SHOW={A:'A',X:'X',R:'R','-':'–'};
 const LABEL={A:'Absent',X:'Vente',R:'Refus','-':'Porte condamnée'};
@@ -310,6 +312,7 @@ function renderMenu(){
       <div class="msgline" id="sync-msg"></div><button class="btn" data-act="syncon">Vérifier et activer</button>`}</div>
   <div class="sec"><h2>Ville de référence pour la carte</h2><p>Sert à placer les adresses sur la carte. France uniquement.</p>
     <div class="pair"><label>Code postal<input id="s-cp" inputmode="numeric" autocomplete="off" value="${esc(S.postcode)}"></label><label>Ville<input id="s-city" autocomplete="off" value="${esc(S.city)}"></label></div></div>`}
+  ${framed?'':`<div class="sec"><h2>Version</h2><p>Version ${APP_VERSION}.</p><button class="btn" data-act="update">Rechercher une mise à jour</button></div>`}
   <div class="sec"><h2>Affichage</h2><div class="seg">${[['auto','Auto'],['dark','Sombre'],['light','Clair']].map(([k,l])=>`<button class="btn ${S.theme===k?'on':''}" data-act="theme" data-t="${k}">${l}</button>`).join('')}</div></div>
   <div class="sec"><h2>Tout effacer</h2><p>Supprime toutes les adresses et toutes les tournées de ce téléphone. Les fichiers de sauvegarde ne sont pas touchés.</p>
     <button class="btn danger" data-act="reset">Effacer toutes les données</button></div>
@@ -446,6 +449,7 @@ document.addEventListener('click',e=>{
   if(a==='new')go('edit');
   else if(a==='menu')go('menu');
   else if(a==='map')go('map');
+  else if(a==='update')checkUpdate(true);
   else if(a==='syncon')activateSync();
   else if(a==='syncnow'){sync.error='';pushNow(true).then(()=>toast(sync.error?'Envoi impossible.':navigator.onLine===false?'Pas de réseau pour le moment.':'Envoyé sur GitHub.'))}
   else if(a==='syncrestore')restoreSync();
@@ -485,7 +489,22 @@ render();
 if(!S.buildings.length&&!framed){try{idb('readonly',s=>s.get('data')).then(j=>{if(!j)return;const d=JSON.parse(j);if(d.buildings&&d.buildings.length&&!S.buildings.length){S=migrate(Object.assign(blank(),d));save(false);render();toast('Données récupérées depuis la copie de secours.')}}).catch(()=>{})}catch(e){}}
 if(!framed){window.addEventListener('online',()=>pushNow());document.addEventListener('visibilitychange',()=>pushNow());setInterval(()=>pushNow(),60000);pushNow()}
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-if('serviceWorker' in navigator&&!framed)navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* ---------- Mises à jour ---------- */
+let swReg=null,updateReady=false;
+function showUpdate(){if(updateReady)return;updateReady=true;
+  const b=document.createElement('button');b.id='updbar';b.textContent='Nouvelle version installée. Toucher ici pour l\'afficher.';b.onclick=()=>location.reload();document.body.appendChild(b)}
+async function checkUpdate(manual){
+  if(!swReg){if(manual)toast('Mise à jour indisponible ici.');return}
+  if(navigator.onLine===false){if(manual)toast('Pas de réseau pour le moment.');return}
+  try{await swReg.update()}catch(e){if(manual)toast('Le site ne répond pas. Réessayez plus tard.');return}
+  if(manual)setTimeout(()=>{if(!updateReady&&!swReg.installing&&!swReg.waiting)toast('Vous avez la dernière version.')},2500);
+}
+if('serviceWorker' in navigator&&!framed){
+  const hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController)showUpdate()});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{swReg=r;checkUpdate(false)}).catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate(false)});
+}
 </script>
 </body>
 </html>
